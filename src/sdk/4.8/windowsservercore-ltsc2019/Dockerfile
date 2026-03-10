@@ -60,13 +60,15 @@ RUN powershell setx /M PATH $(${Env:PATH} `
     + \";${Env:ProgramFiles(x86)}\Microsoft SDKs\ClickOnce\SignTool\")
 
 # Install Targeting Packs
-RUN powershell -Command "`
+RUN powershell -Command " `
+    $ErrorActionPreference = 'Stop'; `
     $referenceAssembliesPath = \"${Env:ProgramFiles(x86)}\Reference Assemblies\Microsoft\Framework\"; `
     New-Item -ItemType Directory -Path ${referenceAssembliesPath}; `
     foreach ($version in @('net40', 'net45', 'net451', 'net452', 'net46', 'net461', 'net462', 'net47', 'net471', 'net472', 'net48', 'net481')) { `
         # Download reference assembly NuGet package `
         $package = \"Microsoft.NETFramework.ReferenceAssemblies.${version}\"; `
         nuget install \"${package}\" -DirectDownload -ExcludeVersion -Version 1.0.3 -OutputDirectory ${Env:TEMP}\Packages -Source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json; `
+        if ($LASTEXITCODE -ne 0) { throw \"Failed to install ${package}\" } `
         $contents = \"${Env:TEMP}\Packages\${package}\build\.NETFramework\"; `
         # Remove IntelliSense files `
         Get-ChildItem -File -Recurse -Path \"${contents}\" | `
